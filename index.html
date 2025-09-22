@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#08121C" />
+  <title>PromptCrafter — Generador de Prompts</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png" sizes="192x192">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="styles.css" />
+  <meta name="description" content="Crea prompts de alta calidad con una guía paso a paso. Guarda, comparte y reutiliza tus mejores prompts. Funciona offline como PWA." />
+</head>
+<body>
+<header class="app-header">
+  <div class="brand">
+    <img src="icons/icon-192.png" alt="logo" />
+    <h1>PromptCrafter</h1>
+  </div>
+  <nav class="top-actions">
+    <button id="btnInstall" class="secondary" title="Instalar app">Instalar</button>
+    <button id="btnShare" class="secondary" title="Compartir configuración">Compartir</button>
+    <a class="secondary" href="#" id="btnExport">Exportar</a>
+    <label class="file">
+      Importar <input type="file" id="fileImport" accept="application/json">
+    </label>
+  </nav>
+</header>
+
+<main class="layout">
+  <section class="panel form-panel">
+    <h2>1) Define tu petición</h2>
+
+    <div class="grid">
+      <label>Plantilla / Objetivo
+        <select id="template">
+          <option value="chat">Chat de texto (GPT/Gemini/Claude)</option>
+          <option value="code">Generación de código</option>
+          <option value="research">Investigación/Resumen</option>
+          <option value="marketing">Marketing/Copy</option>
+          <option value="image">Imagen (Midjourney/DALL·E/Leonardo)</option>
+        </select>
+      </label>
+
+      <label>Idioma del resultado
+        <select id="language">
+          <option value="es">Español</option>
+          <option value="en">English</option>
+        </select>
+      </label>
+
+      <label>Rol/Persona (opcional)
+        <input id="role" placeholder="Ej.: Actúa como redactor senior en salud" />
+      </label>
+
+      <label>Tarea principal
+        <input id="task" placeholder="Describe en una frase lo que quieres lograr" />
+      </label>
+
+      <label>Contexto y objetivo
+        <textarea id="context" rows="3" placeholder="¿Para quién es? ¿Qué buscas? ¿Por qué?"></textarea>
+      </label>
+
+      <label>Datos disponibles (pegar texto/notas/URLs)
+        <textarea id="data" rows="3" placeholder="Aporta material, ejemplos, enlaces…"></textarea>
+      </label>
+
+      <label>Formato de salida
+        <input id="format" placeholder="Ej.: lista con bullets, tabla Markdown 3 columnas…" />
+      </label>
+
+      <label>Restricciones y criterios
+        <input id="constraints" placeholder="Límites, criterios de éxito, palabras prohibidas…" />
+      </label>
+
+      <label>Tono/Estilo
+        <input id="tone" placeholder="Profesional, cercano, técnico, divertido…" />
+      </label>
+
+      <label>Longitud/Profundidad
+        <input id="length" placeholder="p. ej. 150–200 palabras, 10 bullets, 2–3 párrafos" />
+      </label>
+
+      <label>Público objetivo
+        <input id="audience" placeholder="¿Quién lo leerá/verá?" />
+      </label>
+
+      <label>Ejemplos (few-shot) <span class="hint">(1 por línea, opcional)</span>
+        <textarea id="examples" rows="3" placeholder="Ejemplo A → …&#10;Ejemplo B → …"></textarea>
+      </label>
+
+      <label>Herramientas/Recursos (opcional)
+        <input id="tools" placeholder="APIs, bibliografía, librerías, formatos, etc." />
+      </label>
+
+      <label>Palabras clave (opcional)
+        <input id="keywords" placeholder="separa por comas: SEO, marca, etc." />
+      </label>
+
+      <label class="checkbox">
+        <input type="checkbox" id="expertMode" />
+        <span>Modo experto (autochequeo y preguntas si falta info)</span>
+      </label>
+    </div>
+
+    <div class="actions">
+      <button id="btnGenerate" class="primary">Generar prompt</button>
+      <button id="btnClear" class="ghost">Limpiar</button>
+    </div>
+
+    <details class="presets">
+      <summary>Atajos rápidos (plantillas útiles)</summary>
+      <div class="presets-grid">
+        <button class="chip" data-preset="copy">Copy para Instagram</button>
+        <button class="chip" data-preset="research">Resumen de artículo</button>
+        <button class="chip" data-preset="code">Refactor de código</button>
+        <button class="chip" data-preset="image">Prompt de imagen</button>
+        <button class="chip" data-preset="seo">Brief SEO</button>
+      </div>
+    </details>
+
+    <div class="quality">
+      <span>Calidad estimada:</span>
+      <progress id="quality" max="100" value="0"></progress>
+      <span id="qualityText">0%</span>
+    </div>
+
+    <div id="suggestions" class="suggestions"></div>
+  </section>
+
+  <section class="panel output-panel">
+    <h2>2) Prompt generado</h2>
+    <textarea id="output" rows="16" spellcheck="false" class="mono" placeholder="Tu prompt aparecerá aquí…"></textarea>
+    <div class="actions">
+      <button id="btnCopy" class="primary">Copiar</button>
+      <button id="btnSave" class="secondary">Guardar</button>
+    </div>
+
+    <h3>3) Historial (local)</h3>
+    <div id="history" class="history"></div>
+  </section>
+</main>
+
+<footer class="app-footer">
+  <small>Hecho con ❤️ para ayudarte a escribir mejores prompts. Funciona offline. — v1.0</small>
+</footer>
+
+<template id="tplHistoryItem">
+  <article class="card">
+    <header>
+      <strong class="title"></strong>
+      <menu>
+        <button class="mini copy">Copiar</button>
+        <button class="mini load">Cargar</button>
+        <button class="mini delete">Borrar</button>
+      </menu>
+    </header>
+    <pre class="body"></pre>
+  </article>
+</template>
+
+<script src="prompts.js" defer></script>
+<script src="app.js" defer></script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js");
+    });
+  }
+</script>
+</body>
+</html>
